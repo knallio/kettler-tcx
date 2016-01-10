@@ -65,4 +65,4 @@ record_workout()
 #workout.set_totaltime()
 
 
-workout.write_xml("filename.xml")
+workout.write_xml("workout.tcx")
