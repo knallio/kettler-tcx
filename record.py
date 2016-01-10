@@ -1,52 +1,59 @@
 import serial
-import time
-
-RESET=b'RS\r\n'
-ID=b'ID\r\n'
-FIRMWARE=b'VE\r\n'
-STATUS=b'ST\r\n'
-
-PROGRAMS=b'RP\r\n'
-#COMMANDMODE=b'CM\r\n'
-#PW x
-#Request power of x watts
-#PT mmss
-#Request time of mmss
-#PD x
-#Request x/10 km distance
+from time import sleep
 
 
-ser = serial.Serial()
-ser.baudrate = 9600
-ser.port = '/dev/ttyUSB0'
-ser.timeout = 10
+from kettler import kettler
+from tcx import *
+
+ergo=kettler()
+#ergo.reset()
+
+workout=tcx()
+workout.add_activity()
+
+def record_workout(intervall=5,timeout=100):
+
+	waiting=True
+	recording=False
+	finished=False
+	workouttime=0
+	while (waiting or recording) and not finished:
+		print(time())
+		if waiting:
+			print("waiting for activity")
+
+		point=ergo.status()
+		#updating timestamps:
+		lastworkouttime=workouttime
+		workouttime=point["workouttime"]
+
+		#workouttime has to be greater than 0 to start recording
+		if workouttime>0:
+			if waiting:
+				print("Start recording workout")
+				#calculate accurate starttime, could be offset by intervall
+				workout.starttime=time()-workouttime
+				waiting=False
+				recording=True
+			workout.add_trackpoint(point)
+
+		#if the workouttime has not changed from last time, the workout is finished. Could be extended to stop/start laps in the future
+		if recording and lastworkouttime==workouttime:
+			finished=True
+
+		#mainly for developing without workouts
+		if time()-workout.starttime>timeout:
+			finished=True
+
+		sleep(intervall)
 
 
-print(ser)
-ser.open()
-print(ser)
+record_workout()
 
-#ser.write(RESET)
+#workout.add_trackpoint({"workouttime":5})
+#workout.add_trackpoint({"workouttime":7})
+workout.set_id()
+workout.set_starttime()
+workout.set_totaltime()
 
-
-ser.write(ID)
-id=ser.readline()
-print(id)
-
-ser.write(FIRMWARE)
-firmware=ser.readline()
-print(firmware)
-
-
-ser.write(PROGRAMS)
-programs=ser.readline()
-print(programs)
-
-running=True
-
-
-#while running:
-#	ser.write(STATUS)
-#	status=ser.readline()
-#	print(status)
-#	time.sleep(5)
+workout.write_xml("filename.xml")
