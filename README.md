@@ -2,7 +2,7 @@
 Generate tcx files from Kettler ergometer
 
 #Status
-Proof of principle. Basic functionality is implemented, still some parts missing. 
+Alpha. Basic functionality is implemented, no user interface or commandline options, some features missing. 
 
 #Installation
 Nothing fancy. Download in some folder...
