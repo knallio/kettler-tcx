@@ -1,17 +1,18 @@
-import serial
+#!/usr/bin/env python
+
 from time import sleep
 
 
-from kettler import kettler
+from kettler import *
 from tcx import *
 
 ergo=kettler()
-#ergo.reset()
-
 workout=tcx()
-workout.add_activity()
 
-def record_workout(intervall=5,timeout=100):
+def record_workout(intervall=5,timeout=300):
+	ergo.reset()
+
+	workout.add_activity()
 
 	waiting=True
 	recording=False
@@ -32,7 +33,7 @@ def record_workout(intervall=5,timeout=100):
 			if waiting:
 				print("Start recording workout")
 				#calculate accurate starttime, could be offset by intervall
-				workout.starttime=time()-workouttime
+				workout.set_starttime(time()-workouttime)
 				waiting=False
 				recording=True
 			workout.add_trackpoint(point)
@@ -42,18 +43,26 @@ def record_workout(intervall=5,timeout=100):
 			finished=True
 
 		#mainly for developing without workouts
-		if time()-workout.starttime>timeout:
+		if waiting and time()-workout.starttime>timeout:
 			finished=True
 
 		sleep(intervall)
 
 
+
+def test_workout():
+	workout.add_activity()
+	workout.set_starttime(time())
+	workout.add_trackpoint({"workouttime":5,"DistanceMeters":100,"Speed":10,"Watts":200})
+	workout.add_trackpoint({"workouttime":7,"DistanceMeters":200,"Speed":20,"Calories":100})
+
+#test_workout()
 record_workout()
 
-#workout.add_trackpoint({"workouttime":5})
-#workout.add_trackpoint({"workouttime":7})
-workout.set_id()
-workout.set_starttime()
-workout.set_totaltime()
+
+#workout.set_id()
+#workout.set_starttime()
+#workout.set_totaltime()
+
 
 workout.write_xml("filename.xml")

@@ -9,6 +9,7 @@ class tcx:
 	NS2_NS="http://www.garmin.com/xmlschemas/ActivityExtension/v2"
 	#Schemalocation:
 	XML_SCHEMA="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 http://www.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd"
+	XML_SCHEMA_EXT="http://www.garmin.com/xmlschemas/ActivityExtension/v2 http://www.garmin.com/xmlschemas/ActivityExtensionv2.xsd"
 
 
 	def __init__(self):
@@ -28,15 +29,16 @@ class tcx:
 		return mktime(time)
 
 	def add_activity(self):
+		#strictlx speaking it adds an activity with one lap and one track!
 		self.activity=etree.SubElement(self.activities, "Activity", Sport="Other")
 		self.id=etree.SubElement(self.activity, "Id")
-
+		self.id.text=self.time_to_iso8601(time())
 		self.lap=etree.SubElement(self.activity, "Lap", StartTime="2015")
 
 		self.totaltime=etree.SubElement(self.lap, "TotalTimeSeconds")
-		etree.SubElement(self.lap, "DistanceMeters").text="100"
-		etree.SubElement(self.lap, "MaximumSpeed").text="1.0"
-		etree.SubElement(self.lap, "Calories").text="100"
+		self.distancemeters=etree.SubElement(self.lap, "DistanceMeters")
+		self.maximumspeed=etree.SubElement(self.lap, "MaximumSpeed")
+		self.calories=etree.SubElement(self.lap, "Calories")
 		etree.SubElement(self.lap, "Intensity").text="Active"
 		etree.SubElement(self.lap, "TriggerMethod").text="Manual"
 		self.track=etree.SubElement(self.lap, "Track")
@@ -47,8 +49,9 @@ class tcx:
 		self.id.text=id
 
 	def set_starttime(self,time=None):
-		if not time:
-			self.lap.set("StartTime",self.time_to_iso8601(self.starttime))
+		if time:
+			self.starttime=time
+		self.lap.set("StartTime",self.time_to_iso8601(self.starttime))
 
 	def set_totaltime(self,time=None):
 		if not time:
@@ -63,17 +66,21 @@ class tcx:
 			self.totaltime.text=str(totaltime)
 
 	def add_trackpoint(self,point):
-
+#Time related custom evaluation:
 		self.trackpoints.append(etree.SubElement(self.track, "Trackpoint"))
 		if "workouttime" in point:
 			#calculate time from starttime
 			timestring=self.time_to_iso8601(self.starttime+point["workouttime"])
+			self.totaltime.text=str(point["workouttime"])
 
 		elif "Time" in point:
 			timestring=point["Time"]
-		etree.SubElement(self.trackpoints[-1], "Time").text=timestring
 
 #<xsd:element name="Time" type="xsd:dateTime"/>
+		etree.SubElement(self.trackpoints[-1], "Time").text=timestring
+
+#Standard Trackpoint properties:
+
 
 #<xsd:element name="Position" type="Position_t" minOccurs="0"/>
 		if "Position" in point:
@@ -86,6 +93,7 @@ class tcx:
 #<xsd:element name="DistanceMeters" type="xsd:double" minOccurs="0"/>
 		if "DistanceMeters" in point:
 			etree.SubElement(self.trackpoints[-1], "DistanceMeters").text=str(point["DistanceMeters"])
+			self.distancemeters.text=str(point["DistanceMeters"])
 
 #<xsd:element name="HeartRateBpm" type="HeartRateInBeatsPerMinute_t" minOccurs="0"/>
 		if "HeartRateBpm" in point:
@@ -98,8 +106,28 @@ class tcx:
 #<xsd:element name="SensorState" type="SensorState_t" minOccurs="0"/>
 		if "SensorState" in point:
 			etree.SubElement(self.trackpoints[-1], "SensorState").text=str(point["SensorState"])
-#<xsd:element name="Extensions" type="Extensions_t" minOccurs="0">
 
+#<xsd:element name="Extensions" type="Extensions_t" minOccurs="0">
+#Speed, Watts
+		if "Speed" in point or "Watts" in point:
+			ext=etree.SubElement(self.trackpoints[-1], "Extensions")
+			exttcx=etree.SubElement(ext,"TPX", xmlns="http://www.garmin.com/xmlschemas/ActivityExtension/v2")
+
+		if "Speed" in point:
+			etree.SubElement(exttcx,"Speed").text=str(point["Speed"])
+			if not self.maximumspeed.text or point["Speed"]>float(self.maximumspeed.text):
+				self.maximumspeed.text=str(point["Speed"])
+
+		if "Watts" in point:
+			etree.SubElement(exttcx,"Watts").text=str(point["Watts"])
+
+##Lap Related:
+		if "Calories" in point:
+			self.calories.text=str(point["Calories"])
+
+#AvgSpeed" type="xsd:double" minOccurs="0"/><xsd:element name="MaxBikeCadence" type="CadenceValue_t" minOccurs="0"/><xsd:element name="AvgRunCadence" type="CadenceValue_t" 
+#minOccurs="0"></xsd:element><xsd:element name="MaxRunCadence" type="CadenceValue_t" minOccurs="0"/><xsd:element name="Steps" type="xsd:unsignedShort" minOccurs="0"/><xsd:element 
+#name="AvgWatts" type="xsd:unsignedShort" minOccurs="0"/><xsd:element name="MaxWatts" 
 
 
 	def write_xml(self,filename):

@@ -20,11 +20,12 @@ class kettler():
 		self.ser = serial.Serial()
 		self.ser.baudrate = 9600
 		self.ser.port = port
-		self.ser.timeout = 10
+		self.ser.timeout = 20
 		self.ser.open()
 
 	def reset(self):
-		self.send_command(self.commands['RESET'][0])
+		print("Reset: " + self.send_command(self.commands['RESET'][0]).decode('utf-8'))
+		print(self.ser.readline())
 
 	def send_command(self,command_code=None,command_string=None):
 		if not command_code:
@@ -39,10 +40,11 @@ class kettler():
 		numbers=state.decode('utf-8').split('\t')
 		state={	"HeartRateBpm" :	int(numbers[0]),
 			"Cadence"	:	int(numbers[1]),
-			"speed"	:	int(numbers[2])*100,
-			"DistanceMeters":	int(numbers[3])*100,
-			"power"	:	int(numbers[4]),
-			"energy":	int(numbers[5]),
-			"workouttime"	:	60*int(numbers[6].split(':')[0])+int(numbers[6].split(':')[1]),
+			"Speed"	:	int(numbers[2])*100/3600, # 0.1km/h in m/s
+			"DistanceMeters":	int(numbers[3])*100, # 0.1 km in m
+			"Watts"	:	int(numbers[4]),
+			"Calories":	int(numbers[5])*0.239006, # kJ in kcal
+			"workouttime"	:	60*int(numbers[6].split(':')[0])+int(numbers[6].split(':')[1]), # in seconds
 			"act_power":	int(numbers[7])}
 		return state
+
