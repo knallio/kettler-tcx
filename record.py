@@ -11,42 +11,56 @@ workout=tcx()
 
 def record_workout(intervall=5,timeout=300):
 	ergo.reset()
+	program_times=ergo.read_programs()
+
+	#first wait for recording to start:
+	#TODO: distancemode
+	#Question: countdown mode?
+	starttimes=[0]+[x*60 for x in program_times]
+	print(starttimes)
+	while True:
+		print("waiting for activity")
+		point=ergo.status()
+		print(point)
+		workouttime=point["workouttime"]
+		if workouttime not in starttimes:
+			break
+		sleep(intervall)
+		#TODO: timeout
 
 	workout.add_activity()
 
-	waiting=True
-	recording=False
-	finished=False
-	workouttime=0
-	while (waiting or recording) and not finished:
-		print(time())
-		if waiting:
-			print("waiting for activity")
+	#check if program is selected:
+	#TODO: get real starting time, maybe implement in kettler()
+	if workouttime>600:
+		countdown=True
+		#offset by up to intervall seconds
+		fromtime=workouttime
+		#offset by up to intervall seconds
+		workout.set_starttime(time())
+	else:
+		#calculate accurate starttime, could be offset by intervall
+		workout.set_starttime(time()-workouttime)
+		countdown=False
 
-		point=ergo.status()
+	#start recording
+	while True:
+		print(str(time())+ "recording")
+		if countdown:
+			point['workouttime']=fromtime-point['workouttime']
+		workout.add_trackpoint(point)
+
+		sleep(intervall)
 		#updating timestamps:
+		point=ergo.status()
+		print(point)
 		lastworkouttime=workouttime
 		workouttime=point["workouttime"]
 
-		#workouttime has to be greater than 0 to start recording
-		if workouttime>0:
-			if waiting:
-				print("Start recording workout")
-				#calculate accurate starttime, could be offset by intervall
-				workout.set_starttime(time()-workouttime)
-				waiting=False
-				recording=True
-			workout.add_trackpoint(point)
-
 		#if the workouttime has not changed from last time, the workout is finished. Could be extended to stop/start laps in the future
-		if recording and lastworkouttime==workouttime:
-			finished=True
-
-		#mainly for developing without workouts
-		if waiting and time()-workout.starttime>timeout:
-			finished=True
-
-		sleep(intervall)
+		if lastworkouttime==workouttime:
+			print("Stopping recording")
+			break
 
 
 
@@ -58,11 +72,5 @@ def test_workout():
 
 #test_workout()
 record_workout()
-
-
-#workout.set_id()
-#workout.set_starttime()
-#workout.set_totaltime()
-
 
 workout.write_xml("workout.tcx")

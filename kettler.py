@@ -48,6 +48,21 @@ class kettler():
 		#TODO: error-code
 		return response
 
+	def read_programs(self):
+		response=self.send_command(self.commands['PROGRAMS'][0])
+		response=response.decode('utf-8').split('\t')
+		self.programs=[]
+		#not very elegant but works for now
+		i=0
+		while i<len(response) and int(response[i])>0:
+			m=int(response[i])
+			self.programs.append((m,[]))
+			for x in range(m):
+				i+=1
+				self.programs[-1][1].append(int(response[i]))
+			i+=1
+		return list(map(lambda x: x[0],self.programs))
+
 	def status(self):
 		state=self.send_command(self.commands['STATUS'][0])
 		numbers=state.decode('utf-8').split('\t')
@@ -62,7 +77,9 @@ class kettler():
 		return state
 
 def main():
+	print("kettler test script")
 	ergo=kettler()
+	print(ergo.read_programs())
 
 if __name__ == "__main__":
 	main()
