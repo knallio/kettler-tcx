@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import serial
 import time
 
@@ -48,3 +50,8 @@ class kettler():
 			"act_power":	int(numbers[7])}
 		return state
 
+def main():
+	ergo=kettler()
+
+if __name__ == "__main__":
+	main()
