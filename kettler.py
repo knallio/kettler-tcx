@@ -76,6 +76,16 @@ class kettler():
 			"act_power":	int(numbers[7])}
 		return state
 
+	def testmode(self,intervall=5,timeout=60):
+		starttime=time()
+		while True:
+			for command in self.commands():
+				print command
+			if time()-starttime>timeout:
+				break;
+			sleep(intervall)
+
+
 def main():
 	print("kettler test script")
 	ergo=kettler()
