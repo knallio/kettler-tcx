@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import serial
-import time
+from time import time,sleep
 
 class kettler():
 
@@ -37,19 +37,19 @@ class kettler():
 		self.ser.open()
 
 	def reset(self):
-		print("Reset: " + self.send_command(self.commands['RESET'][0]).decode('utf-8'))
+		print("Reset: " + self.send_command('RESET').decode('utf-8'))
 		print(self.ser.readline())
 
-	def send_command(self,command_code=None,command_string=None):
+	def send_command(self,command_string=None,command_code=None):
 		if not command_code:
-			command_code=self.commands(command_string)(0)
-		self.ser.write(bytearray(command_code+'\r\n','UTF-8'))
+			command_code=self.commands[command_string][0]
+		self.ser.write(bytearray(command_code+'\r\n','utf-8'))
 		response=self.ser.readline()
 		#TODO: error-code
 		return response
 
 	def read_programs(self):
-		response=self.send_command(self.commands['PROGRAMS'][0])
+		response=self.send_command('PROGRAMS')
 		response=response.decode('utf-8').split('\t')
 		self.programs=[]
 		#not very elegant but works for now
@@ -79,8 +79,8 @@ class kettler():
 	def testmode(self,intervall=5,timeout=60):
 		starttime=time()
 		while True:
-			for command in self.commands():
-				print command
+			for command in sorted(self.commands):
+				print(command)
 			if time()-starttime>timeout:
 				break;
 			sleep(intervall)
@@ -90,6 +90,7 @@ def main():
 	print("kettler test script")
 	ergo=kettler()
 	print(ergo.read_programs())
+	ergo.testmode(timeout=10)
 
 if __name__ == "__main__":
 	main()
