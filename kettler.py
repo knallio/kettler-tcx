@@ -28,6 +28,9 @@ class kettler():
 		'UNKNOWN4':('SB','unknown','ACK')
 	}
 
+	#save last states to evaluate countdown mode
+	last_states=[]
+
 	def __init__(self,port='/dev/ttyUSB0'):
 		self.ser = serial.Serial()
 		self.ser.baudrate = 9600
@@ -63,8 +66,8 @@ class kettler():
 		return list(map(lambda x: x[0],self.programs))
 
 	def status(self):
-		state=self.send_command(self.commands['STATUS'][0])
-		numbers=state.decode('utf-8').split('\t')
+		state=self.send_command('STATUS')
+		numbers=state.split('\t')
 		state={	"HeartRateBpm" :	int(numbers[0]),
 			"Cadence"	:	int(numbers[1]),
 			"Speed"	:	int(numbers[2])*100/3600, # 0.1km/h in m/s
@@ -74,6 +77,10 @@ class kettler():
 			"workouttime"	:	60*int(numbers[6].split(':')[0])+int(numbers[6].split(':')[1]), # in seconds
 			"act_power":	int(numbers[7])}
 		return state
+
+	def countdown(self):
+		#TODO
+		return False
 
 	def testmode(self,intervall=5,timeout=60):
 		starttime=time()

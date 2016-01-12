@@ -2,75 +2,103 @@
 
 from time import sleep
 
-
 from kettler import *
 from tcx import *
 
-ergo=kettler()
-workout=tcx()
+class recorder():
 
-def record_workout(intervall=5,timeout=300):
-	ergo.reset()
-	program_times=ergo.read_programs()
+	ergo=kettler()
+	workout=tcx()
 
-	#first wait for recording to start:
-	#TODO: distancemode
-	#Question: countdown mode?
-	starttimes=[0]+[x*60 for x in program_times]
-	print(starttimes)
-	while True:
-		print("waiting for activity")
-		point=ergo.status()
-		print(point)
-		workouttime=point["workouttime"]
-		if workouttime not in starttimes:
-			break
-		sleep(intervall)
-		#TODO: timeout
+	intervall=5
+	timeout=300
 
-	workout.add_activity()
+	def start(self):
+		self.ergo.reset()
+		self.wait_for_workout()
+		self.record_workout()
 
-	#check if program is selected:
-	#TODO: get real starting time, maybe implement in kettler()
-	if workouttime>600:
-		countdown=True
-		#offset by up to intervall seconds
-		fromtime=workouttime
-		#offset by up to intervall seconds
-		workout.set_starttime(time())
-	else:
-		#calculate accurate starttime, could be offset by intervall
-		workout.set_starttime(time()-workouttime)
-		countdown=False
+	def wait_for_workout(self):
+		program_times=self.ergo.read_programs()
 
-	#start recording
-	while True:
-		print(str(time())+ "recording")
-		if countdown:
-			point['workouttime']=fromtime-point['workouttime']
-		workout.add_trackpoint(point)
-
-		sleep(intervall)
-		#updating timestamps:
-		point=ergo.status()
-		print(point)
-		lastworkouttime=workouttime
-		workouttime=point["workouttime"]
-
-		#if the workouttime has not changed from last time, the workout is finished. Could be extended to stop/start laps in the future
-		if lastworkouttime==workouttime:
-			print("Stopping recording")
-			break
+		#first wait for recording to start:
+		#TODO: distancemode
+		#Question: countdown mode?
+		starttimes=[0]+[x*60 for x in program_times]
+		print(starttimes)
+		while True:
+			print("waiting for activity")
+			point=self.ergo.status()
+			print(point)
+			workouttime=point["workouttime"]
+			if workouttime not in starttimes:
+				return True
+				break
+			sleep(self.intervall)
+			#TODO: timeout, 
 
 
+	def record_workout(self):
 
-def test_workout():
-	workout.add_activity()
-	workout.set_starttime(time())
-	workout.add_trackpoint({"workouttime":5,"DistanceMeters":100,"Speed":10,"Watts":200})
-	workout.add_trackpoint({"workouttime":7,"DistanceMeters":200,"Speed":20,"Calories":100})
+		self.workout.add_activity()
 
-#test_workout()
-record_workout()
+		#check if program is selected:
+		#TODO: get real starting time, maybe implement in kettler()
+		if workouttime>600:
+			countdown=True
+			#offset by up to intervall seconds
+			fromtime=workouttime
+			#offset by up to intervall seconds
+			self.workout.set_starttime(time())
+		else:
+			#calculate accurate starttime, could be offset by intervall
+			self.workout.set_starttime(time()-workouttime)
+			countdown=False
 
-workout.write_xml("workout.tcx")
+		#start recording
+		while True:
+			print(str(time())+ "recording")
+			if countdown:
+				point['workouttime']=fromtime-point['workouttime']
+			self.workout.add_trackpoint(point)
+
+			sleep(self.intervall)
+			#updating timestamps:
+			point=ergo.status()
+			print(point)
+			lastworkouttime=workouttime
+			workouttime=point["workouttime"]
+
+			#if the workouttime has not changed from last time, the workout is finished. Could be extended to stop/start laps in the future
+			if lastworkouttime==workouttime:
+				print("Stopping recording")
+				break
+
+	def kettler_to_tcx(self):
+		print("convert kettler status to tcx trackpoint")
+
+	def test_workout(self):
+		self.workout.add_activity()
+		self.workout.set_starttime(time())
+		self.workout.add_trackpoint({"workouttime":5,"DistanceMeters":100,"Speed":10,"Watts":200})
+		self.workout.add_trackpoint({"workouttime":7,"DistanceMeters":200,"Speed":20,"Calories":100})
+
+	def save(self):
+		self.workout.write_xml("workout.tcx")
+
+
+def main():
+	print("kettler recording script")
+	rec=recorder()
+
+	rec.start()
+#	rec.save()
+
+
+if __name__ == "__main__":
+	main()
+
+
+
+
+
