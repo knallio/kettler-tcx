@@ -14,68 +14,52 @@ class recorder():
 	timeout=300
 
 	def start(self):
-		self.ergo.reset()
-		self.wait_for_workout()
-		self.record_workout()
+#		self.ergo.reset()
+		if (self.wait_for_workout()):
+			self.record_workout()
 
 	def wait_for_workout(self):
-		program_times=self.ergo.read_programs()
-
-		#first wait for recording to start:
-		#TODO: distancemode
-		#Question: countdown mode?
-		starttimes=[0]+[x*60 for x in program_times]
-		print(starttimes)
+		starttime=time()
 		while True:
-			print("waiting for activity")
-			point=self.ergo.status()
-			print(point)
-			workouttime=point["workouttime"]
-			if workouttime not in starttimes:
+			print ("\rWaiting for workout: "+ str(round(time()-starttime)) + "s", end="")
+			if self.ergo.is_active():
+				print()
 				return True
-				break
+			if time()-starttime > self.timeout:
+				print()
+				return False
 			sleep(self.intervall)
-			#TODO: timeout, 
-
 
 	def record_workout(self):
 
-		self.workout.add_activity()
-
-		#check if program is selected:
-		#TODO: get real starting time, maybe implement in kettler()
-		if workouttime>600:
-			countdown=True
-			#offset by up to intervall seconds
-			fromtime=workouttime
-			#offset by up to intervall seconds
-			self.workout.set_starttime(time())
-		else:
-			#calculate accurate starttime, could be offset by intervall
-			self.workout.set_starttime(time()-workouttime)
-			countdown=False
+		starttime=self.ergo.starttime
+		self.workout.add_activity(start=starttime)
 
 		#start recording
 		while True:
-			print(str(time())+ "recording")
-			if countdown:
-				point['workouttime']=fromtime-point['workouttime']
-			self.workout.add_trackpoint(point)
+			print("\rRecording: " + str(round(time()-starttime)) + "s",end='')
+			tcxpoint=self.kettler_to_tcx(self.ergo.get_state())
+			self.workout.add_trackpoint(tcxpoint)
 
 			sleep(self.intervall)
-			#updating timestamps:
-			point=ergo.status()
-			print(point)
-			lastworkouttime=workouttime
-			workouttime=point["workouttime"]
-
-			#if the workouttime has not changed from last time, the workout is finished. Could be extended to stop/start laps in the future
-			if lastworkouttime==workouttime:
-				print("Stopping recording")
+			#is_active reads the state
+			if not self.ergo.is_active():
+				print()
 				break
 
-	def kettler_to_tcx(self):
-		print("convert kettler status to tcx trackpoint")
+	def kettler_to_tcx(self,kettlerstate):
+		#convert kettler state to tcx trackpoint
+		tcxpoint={	"Time"		: 	kettlerstate['time'],
+				"HeartRateBpm"	:	kettlerstate['pulse'],
+				"Cadence"	:	kettlerstate['rpm'],
+				"Speed"		:	kettlerstate['speed']*100/3600,	# 0.1km/h in m/s
+				"DistanceMeters":	kettlerstate['distance']*100,		# 0.1 km in m
+				"AltitudeMeters":	kettlerstate['power'],			# hack to show Watts in endomondo
+				"Calories"	:	kettlerstate['energy']*0.239006,	# kJ in kcal
+				"TotalTimeSeconds":	kettlerstate['runtime']		# in seconds
+			}
+		return tcxpoint
+
 
 	def test_workout(self):
 		self.workout.add_activity()
@@ -90,9 +74,9 @@ class recorder():
 def main():
 	print("kettler recording script")
 	rec=recorder()
-
+	rec.timeout=60
 	rec.start()
-#	rec.save()
+	rec.save()
 
 
 if __name__ == "__main__":

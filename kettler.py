@@ -28,8 +28,21 @@ class kettler():
 		'UNKNOWN4':('SB','unknown','ACK')
 	}
 
-	#save last states to evaluate countdown mode
+	#save last num_states states to evaluate countdown mode
 	last_states=[]
+	num_states=4
+	#max age of state before force new read_state()
+	max_state_age=10
+
+	#is ergometer active
+	active=False
+
+	#is ergometer in time countdown mode and from which value?
+	countdown=False
+	countdown_from=0
+
+	#starttime of workout:
+	starttime=time()
 
 	def __init__(self,port='/dev/ttyUSB0'):
 		self.ser = serial.Serial()
@@ -65,22 +78,67 @@ class kettler():
 			i+=1
 		return list(map(lambda x: x[0],self.programs))
 
-	def status(self):
+	def read_state(self):
 		state=self.send_command('STATUS')
 		numbers=state.split('\t')
-		state={	"HeartRateBpm" :	int(numbers[0]),
-			"Cadence"	:	int(numbers[1]),
-			"Speed"	:	int(numbers[2])*100/3600, # 0.1km/h in m/s
-			"DistanceMeters":	int(numbers[3])*100, # 0.1 km in m
-			"Watts"	:	int(numbers[4]),
-			"Calories":	int(numbers[5])*0.239006, # kJ in kcal
+		state={	"time"	:	time(),
+			"runtime":	time()-self.starttime, #TODO: implement runtime() function to calculate runtime from response?
+			"pulse" :	int(numbers[0]),
+			"rpm"	:	int(numbers[1]),
+			"speed"	:	int(numbers[2]), # 0.1km/h
+			"distance":	int(numbers[3]), # 0.1 km in m
+			"power"	:	int(numbers[4]),
+			"energy":	int(numbers[5]), # kJ
 			"workouttime"	:	60*int(numbers[6].split(':')[0])+int(numbers[6].split(':')[1]), # in seconds
 			"act_power":	int(numbers[7])}
+		self.set_last_state(state)
 		return state
 
-	def countdown(self):
-		#TODO
-		return False
+	def set_last_state(self,state):
+		self.last_states.insert(0,state)
+		if len(self.last_states) > self.num_states:
+			self.last_states.pop()
+
+	def get_state(self):
+		if len(self.last_states)>0 and time()-self.last_states[0]['time'] < self.max_state_age:
+			return self.last_states[0]
+		else:
+			return self.read_state()
+
+	def is_active(self):
+		#TODO: distancemode?
+		self.read_state()
+		#last state was active, check if activity has stopped:
+		if self.active:
+			workouttimediff=self.last_states[0]['workouttime']-self.last_states[1]['workouttime']
+			if workouttimediff==0:
+				self.active=False
+			else:
+				self.active=True
+		#last state was inactive, check if activity hast started:
+		else:
+			#enough states to compare?
+			if len(self.last_states) > 1:
+				timediff=self.last_states[0]['time']-self.last_states[1]['time']
+				workouttimediff=self.last_states[0]['workouttime']-self.last_states[1]['workouttime']
+				#if workouttime has changed but not more than the time between measurements, an activity has been started
+				if 0 < abs(workouttimediff) <= timediff+1:
+					self.active=True
+					self.starttime=time()-abs(workouttimediff)
+					if workouttimediff < 0:
+						self.countdown=True
+						self.countdown_from=self.last_states[1]['workouttime']
+					else:
+						self.countdown=False
+						self.countdown_from=0
+				else:
+					self.active=False
+			#not enough states to compare, wait 1 second and check again:
+			else:
+				sleep(1)
+				self.active=self.is_active()
+		return self.active
+
 
 	def testmode(self,intervall=5,timeout=60):
 		starttime=time()

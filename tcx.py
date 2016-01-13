@@ -28,12 +28,16 @@ class tcx:
 		time=strptime(iso, "%Y-%m-%dT%H:%M:%SZ")
 		return mktime(time)
 
-	def add_activity(self):
-		#strictlx speaking it adds an activity with one lap and one track!
+	def add_activity(self,start=None):
+		if not start:
+			start=time()
+
+		#strictly speaking it adds an activity with one lap and one track!
 		self.activity=etree.SubElement(self.activities, "Activity", Sport="Other")
 		self.id=etree.SubElement(self.activity, "Id")
 		self.id.text=self.time_to_iso8601(time())
-		self.lap=etree.SubElement(self.activity, "Lap", StartTime="2015")
+
+		self.lap=etree.SubElement(self.activity, "Lap", StartTime=self.time_to_iso8601(start))
 
 		self.totaltime=etree.SubElement(self.lap, "TotalTimeSeconds")
 		self.distancemeters=etree.SubElement(self.lap, "DistanceMeters")
@@ -68,20 +72,12 @@ class tcx:
 	def add_trackpoint(self,point):
 #Time related custom evaluation:
 		self.trackpoints.append(etree.SubElement(self.track, "Trackpoint"))
-		if "workouttime" in point:
-			#calculate time from starttime
-			timestring=self.time_to_iso8601(self.starttime+point["workouttime"])
-			self.totaltime.text=str(point["workouttime"])
-
-		elif "Time" in point:
-			timestring=point["Time"]
 
 #<xsd:element name="Time" type="xsd:dateTime"/>
-		etree.SubElement(self.trackpoints[-1], "Time").text=timestring
+		if "Time" in point:
+			etree.SubElement(self.trackpoints[-1], "Time").text=self.time_to_iso8601(point["Time"])
 
 #Standard Trackpoint properties:
-
-
 #<xsd:element name="Position" type="Position_t" minOccurs="0"/>
 		if "Position" in point:
 			etree.SubElement(self.trackpoints[-1], "Postion").text=str(point["Position"])
@@ -124,6 +120,9 @@ class tcx:
 ##Lap Related:
 		if "Calories" in point:
 			self.calories.text=str(point["Calories"])
+
+		if "TotalTimeSeconds" in point:
+			self.totaltime.text=str(point["TotalTimeSeconds"])
 
 #AvgSpeed" type="xsd:double" minOccurs="0"/><xsd:element name="MaxBikeCadence" type="CadenceValue_t" minOccurs="0"/><xsd:element name="AvgRunCadence" type="CadenceValue_t" 
 #minOccurs="0"></xsd:element><xsd:element name="MaxRunCadence" type="CadenceValue_t" minOccurs="0"/><xsd:element name="Steps" type="xsd:unsignedShort" minOccurs="0"/><xsd:element 
