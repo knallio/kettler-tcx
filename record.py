@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from time import sleep
+from time import sleep,strftime
 
 from kettler import *
 from tcx import *
@@ -67,8 +67,8 @@ class recorder():
 		self.workout.add_trackpoint({"workouttime":5,"DistanceMeters":100,"Speed":10,"Watts":200})
 		self.workout.add_trackpoint({"workouttime":7,"DistanceMeters":200,"Speed":20,"Calories":100})
 
-	def save(self):
-		self.workout.write_xml("workout.tcx")
+	def save(self,filename="Ergo_"+strftime("%Y_%m_%d")+".tcx"):
+		self.workout.write_xml(filename)
 
 
 def main():
