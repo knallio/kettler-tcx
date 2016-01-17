@@ -11,10 +11,10 @@ class recorder():
 	workout=tcx()
 
 	intervall=5
-	timeout=300
+	timeout=600
 
 	def start(self):
-#		self.ergo.reset()
+		self.ergo.reset()
 		if (self.wait_for_workout()):
 			self.record_workout()
 
@@ -74,7 +74,6 @@ class recorder():
 def main():
 	print("kettler recording script")
 	rec=recorder()
-	rec.timeout=60
 	rec.start()
 	rec.save()
 
