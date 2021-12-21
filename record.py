@@ -56,7 +56,8 @@ class recorder():
 				"DistanceMeters":	kettlerstate['distance']*100,		# 0.1 km in m
 				"AltitudeMeters":	kettlerstate['power'],			# hack to show Watts in endomondo
 				"Calories"	:	kettlerstate['energy']*0.239006,	# kJ in kcal
-				"TotalTimeSeconds":	kettlerstate['runtime']		# in seconds
+				"TotalTimeSeconds":	kettlerstate['runtime'],		# in seconds
+			  	"Watts" 	:   	kettlerstate['act_power'] # in Watts
 			}
 		return tcxpoint
 
@@ -67,7 +68,7 @@ class recorder():
 		self.workout.add_trackpoint({"workouttime":5,"DistanceMeters":100,"Speed":10,"Watts":200})
 		self.workout.add_trackpoint({"workouttime":7,"DistanceMeters":200,"Speed":20,"Calories":100})
 
-	def save(self,filename="Ergo_"+strftime("%Y_%m_%d")+".tcx"):
+	def save(self,filename="Ergo_"+strftime("%Y_%m_%d_%H-%M-%S"")+".tcx"): # write filename with date and time
 		self.workout.write_xml(filename)
 
 
