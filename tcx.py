@@ -20,6 +20,8 @@ class tcx:
 		self.starttime=time()
 		self.activities = etree.SubElement(self.tcx, "Activities")
 		self.trackpoints=[]
+		self.newdistance = 0.0  #accumulated total distance
+		self.distance_trackpoint = 0.0 #distance between two trackpoints s = v * t
 
 	def time_to_iso8601(self,time):
 		return strftime("%Y-%m-%dT%H:%M:%SZ",gmtime(time))
@@ -88,8 +90,10 @@ class tcx:
 
 #<xsd:element name="DistanceMeters" type="xsd:double" minOccurs="0"/>
 		if "DistanceMeters" in point:
-			etree.SubElement(self.trackpoints[-1], "DistanceMeters").text=str(point["DistanceMeters"])
-			self.distancemeters.text=str(point["DistanceMeters"])
+			self.distance_trackpoint = 5.0 * point["Speed"] #distance since last trackpoint s = v * t(5sec.)
+			self.newdistance = self.newdistance + self.distance_trackpoint #accumulated distance
+			etree.SubElement(self.trackpoints[-1], "DistanceMeters").text=str(self.newdistance)
+			self.distancemeters.text=str(self.newdistance)
 
 #<xsd:element name="HeartRateBpm" type="HeartRateInBeatsPerMinute_t" minOccurs="0"/>
 		if "HeartRateBpm" in point:
