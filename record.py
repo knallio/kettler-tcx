@@ -54,7 +54,7 @@ class recorder():
 				"Cadence"	:	kettlerstate['rpm'],
 				"Speed"		:	kettlerstate['speed']*100/3600,	# 0.1km/h in m/s
 				"DistanceMeters":	kettlerstate['distance']*100,		# 0.1 km in m
-				"AltitudeMeters":	kettlerstate['power'],			# hack to show Watts in endomondo
+				"AltitudeMeters":	1,			# my altitude, location of Kettler
 				"Calories"	:	kettlerstate['energy']*0.239006,	# kJ in kcal
 				"TotalTimeSeconds":	kettlerstate['runtime']		# in seconds
 			}
