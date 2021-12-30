@@ -93,7 +93,10 @@ class tcx:
 
 #<xsd:element name="HeartRateBpm" type="HeartRateInBeatsPerMinute_t" minOccurs="0"/>
 		if "HeartRateBpm" in point:
-			etree.SubElement(self.trackpoints[-1], "HeartRateBpm").text=str(point["HeartRateBpm"])
+			HeartRate = etree.SubElement(self.trackpoints[-1], "HeartRateBpm")
+			HeartRateVal = etree.SubElement(HeartRate, "Value")
+			HeartRateVal.text = str(point["HeartRateBpm"])
+			#etree.SubElement(self.trackpoints[-1], "HeartRateBpm").text=str(point["HeartRateBpm"])
 
 #<xsd:element name="Cadence" type="CadenceValue_t" minOccurs="0"/>
 		if "Cadence" in point:
